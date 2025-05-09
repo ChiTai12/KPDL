@@ -1,0 +1,735 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title mb-4">Xây dựng thực đơn nhà hàng</h3>
+                <p class="text-muted">Tạo thực đơn nhà hàng bằng cách chọn món ăn từ các danh mục đã được phân cụm tự động</p>
+
+                {% if message %}
+                <div class="alert alert-success">
+                    {{ message }}
+                    <a href="/preview_menu?{{ request.form|urlencode }}" class="btn btn-primary btn-sm ms-3" target="_blank">
+                        <i class="fas fa-eye me-1"></i> Xem trước thực đơn
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="menuBuilderForm">
+    <div class="row">
+        <!-- Cấu hình thực đơn -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cấu hình thực đơn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="menu_title" class="form-label">Tên thực đơn:</label>
+                        <input type="text" class="form-control" id="menu_title" name="menu_title" value="{{ saved_menu.title if saved_menu else 'Thực đơn nhà hàng' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="menu_description" class="form-label">Mô tả:</label>
+                        <textarea class="form-control" id="menu_description" name="menu_description" rows="3">{{ saved_menu.description if saved_menu else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="menu_theme" class="form-label">Chủ đề thiết kế:</label>
+                        <select class="form-select" id="menu_theme" name="menu_theme">
+                            <option value="classic" {% if saved_menu and saved_menu.theme == 'classic' %}selected{% endif %}>Cổ điển</option>
+                            <option value="modern" {% if saved_menu and saved_menu.theme == 'modern' %}selected{% endif %}>Hiện đại</option>
+                            <option value="elegant" {% if saved_menu and saved_menu.theme == 'elegant' %}selected{% endif %}>Sang trọng</option>
+                            <option value="casual" {% if saved_menu and saved_menu.theme == 'casual' %}selected{% endif %}>Thân thiện</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success mt-3">
+                            <i class="fas fa-save me-2"></i>Lưu thực đơn
+                        </button>
+                        <button type="button" id="previewMenuBtn" class="btn btn-primary mt-2">
+                            <i class="fas fa-eye me-2"></i>Xem trước thực đơn
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nguồn món ăn -->
+        <div class="col-md-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Nguồn món ăn</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Thanh tìm kiếm -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="recipeSearch" placeholder="Tìm kiếm món ăn...">
+                        </div>
+                        <div class="form-text">Tìm kiếm sẽ hiển thị kết quả trong tab đang được chọn</div>
+                    </div>
+
+                    <ul class="nav nav-tabs" id="categoryTabs" role="tablist">
+                        {% for category in menu_categories %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if loop.first %}active{% endif %}"
+                                    id="cat-{{ category.id }}-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#cat-{{ category.id }}"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="cat-{{ category.id }}"
+                                    aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+                                    <span class="category-name">{{ category.name }}</span>
+                                    <span class="badge bg-light text-dark">{{ category.recipes|length }}</span>
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="tab-content mt-3" id="categoryTabsContent">
+                        {% for category in menu_categories %}
+                        <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+                             id="cat-{{ category.id }}"
+                             role="tabpanel"
+                             aria-labelledby="cat-{{ category.id }}-tab">
+
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <h6 class="text-muted">{{ category.name }} ({{ category.recipes|length }} món)</h6>
+                                    <p class="small text-muted">Chọn món ăn để thêm vào thực đơn bằng cách nhấp vào nút "Thêm"</p>
+                                </div>
+                            </div>
+
+                            <div class="recipes-container row">
+                                {% for recipe in category.recipes %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card recipe-card h-100" data-recipe="{{ recipe.recipe_name }}">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                {% if recipe.img_src %}
+                                                <img src="{{ recipe.img_src }}" class="me-3" alt="{{ recipe.recipe_name }}"
+                                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                                {% else %}
+                                                <div class="me-3 bg-light d-flex align-items-center justify-content-center"
+                                                     style="width: 50px; height: 50px; border-radius: 4px;">
+                                                    <i class="fas fa-utensils text-muted"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-1 recipe-name">{{ recipe.recipe_name }}</h6>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="text-warning me-2">
+                                                            <i class="fas fa-star"></i>
+                                                            <span>{{ "%.1f"|format(recipe.rating) }}</span>
+                                                        </div>
+                                                        <small class="text-muted">{{ recipe.total_time }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <a href="{{ url_for('recipe_detail', recipe_name=recipe.recipe_name) }}"
+                                                   target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </a>
+
+                                                <div class="d-flex">
+                                                    <button type="button" class="btn btn-sm btn-outline-success me-1 add-to-menu"
+                                                            data-recipe="{{ recipe.recipe_name }}">
+                                                        <i class="fas fa-plus"></i> Thêm
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <!-- Thực đơn - Khai vị -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Khai vị</h5>
+                </div>
+                <div class="card-body">
+                    <div id="starters-container" class="menu-items-container">
+                        <!-- Items will be added here dynamically -->
+                        {% if saved_menu and saved_menu.starters %}
+                            {% for item in saved_menu.starters %}
+                            <div class="menu-item mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input type="hidden" name="starters" value="{{ item.name }}">
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-menu-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm mt-1">
+                                    <span class="input-group-text">Giá</span>
+                                    <input type="text" class="form-control" name="price_{{ item.name|replace(' ', '_') }}"
+                                           placeholder="VD: 150.000đ" value="{{ item.price }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thực đơn - Món chính -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Món chính</h5>
+                </div>
+                <div class="card-body">
+                    <div id="main-dishes-container" class="menu-items-container">
+                        <!-- Items will be added here dynamically -->
+                        {% if saved_menu and saved_menu.main_dishes %}
+                            {% for item in saved_menu.main_dishes %}
+                            <div class="menu-item mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input type="hidden" name="main-dishes" value="{{ item.name }}">
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-menu-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm mt-1">
+                                    <span class="input-group-text">Giá</span>
+                                    <input type="text" class="form-control" name="price_{{ item.name|replace(' ', '_') }}"
+                                           placeholder="VD: 250.000đ" value="{{ item.price }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thực đơn - Tráng miệng -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Tráng miệng</h5>
+                </div>
+                <div class="card-body">
+                    <div id="desserts-container" class="menu-items-container">
+                        <!-- Items will be added here dynamically -->
+                        {% if saved_menu and saved_menu.desserts %}
+                            {% for item in saved_menu.desserts %}
+                            <div class="menu-item mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input type="hidden" name="desserts" value="{{ item.name }}">
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-menu-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm mt-1">
+                                    <span class="input-group-text">Giá</span>
+                                    <input type="text" class="form-control" name="price_{{ item.name|replace(' ', '_') }}"
+                                           placeholder="VD: 100.000đ" value="{{ item.price }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thực đơn - Đồ uống -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Đồ uống</h5>
+                </div>
+                <div class="card-body">
+                    <div id="drinks-container" class="menu-items-container">
+                        <!-- Items will be added here dynamically -->
+                        {% if saved_menu and saved_menu.drinks %}
+                            {% for item in saved_menu.drinks %}
+                            <div class="menu-item mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input type="hidden" name="drinks" value="{{ item.name }}">
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-menu-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm mt-1">
+                                    <span class="input-group-text">Giá</span>
+                                    <input type="text" class="form-control" name="price_{{ item.name|replace(' ', '_') }}"
+                                           placeholder="VD: 50.000đ" value="{{ item.price }}">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Modal chọn danh mục -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn danh mục</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Chọn danh mục cho món: <strong id="selectedRecipeName"></strong></p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-info select-category" data-category="starters">
+                        <i class="fas fa-utensils me-2"></i>Khai vị
+                    </button>
+                    <button type="button" class="btn btn-outline-success select-category" data-category="main-dishes">
+                        <i class="fas fa-drumstick-bite me-2"></i>Món chính
+                    </button>
+                    <button type="button" class="btn btn-outline-warning select-category" data-category="desserts">
+                        <i class="fas fa-ice-cream me-2"></i>Tráng miệng
+                    </button>
+                    <button type="button" class="btn btn-outline-primary select-category" data-category="drinks">
+                        <i class="fas fa-glass-martini-alt me-2"></i>Đồ uống
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Xử lý recipe parameter từ URL khi trang load
+    const urlParams = new URLSearchParams(window.location.search);
+    const recipeToAdd = urlParams.get('recipe');
+    if (recipeToAdd) {
+        // Hiển thị modal chọn danh mục
+        $('#selectedRecipeName').text(recipeToAdd);
+        new bootstrap.Modal(document.getElementById('categoryModal')).show();
+    }
+
+    // Xử lý nhập giá
+    $(document).on('input', 'input[name^="price_"]', function() {
+        let value = $(this).val();
+        // Chỉ cho phép nhập số và dấu chấm
+        value = value.replace(/[^\d.]/g, '');
+        $(this).val(value);
+    });
+
+    // Kiểm tra form trước khi submit
+    $('#menuBuilderForm').on('submit', function(e) {
+        let isValid = true;
+        let firstInvalid = null;
+
+        // Kiểm tra tất cả các input giá
+        $('input[name^="price_"]').each(function() {
+            const $input = $(this);
+            const $menuItem = $input.closest('.menu-item');
+            const itemName = $menuItem.find('span').text();
+
+            // Xóa thông báo lỗi cũ nếu có
+            $input.removeClass('is-invalid');
+            $menuItem.find('.invalid-feedback').remove();
+
+            // Lấy giá trị số từ input
+            const priceValue = parseFloat($input.val()) || 0;
+
+            // Chỉ kiểm tra giá > 0
+            if (!$input.val() || priceValue <= 0) {
+                isValid = false;
+                $input.addClass('is-invalid');
+                $input.after(`<div class="invalid-feedback">Vui lòng nhập giá lớn hơn 0</div>`);
+
+                if (!firstInvalid) {
+                    firstInvalid = $input;
+                }
+            }
+        });
+
+        // Nếu có lỗi, ngăn form submit và scroll đến lỗi đầu tiên
+        if (!isValid) {
+            e.preventDefault();
+            if (firstInvalid) {
+                firstInvalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            toastr.error('Vui lòng nhập giá lớn hơn 0 cho tất cả các món');
+        } else {
+            // Nếu form hợp lệ, xóa parameter recipe khỏi URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('recipe');
+            window.history.replaceState({}, '', url);
+        }
+    });
+
+    // Hàm thêm món vào thực đơn
+    function addToMenu(recipeName, targetContainer = 'main-dishes') {
+        // Kiểm tra xem món đã tồn tại trong danh mục này chưa
+        let alreadyExists = false;
+        $(`#${targetContainer}-container input[type="hidden"]`).each(function() {
+            if ($(this).val() === recipeName) {
+                alreadyExists = true;
+                return false; // break the loop
+            }
+        });
+
+        if (alreadyExists) {
+            toastr.warning(`Món "${recipeName}" đã tồn tại trong danh mục này`);
+            return false;
+        }
+
+        const menuItem = `
+            <div class="menu-item mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <input type="hidden" name="${targetContainer}" value="${recipeName}">
+                        <span>${recipeName}</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-menu-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                    <span class="input-group-text">Giá</span>
+                    <input type="text" class="form-control" name="price_${recipeName.replace(/ /g, '_')}"
+                           placeholder="Nhập giá..." required>
+                </div>
+            </div>
+        `;
+        $(`#${targetContainer}-container`).append(menuItem);
+        return true;
+    }
+
+    // Xử lý nút "Thêm" trong danh sách món ăn
+    $('.add-to-menu').on('click', function() {
+        const recipeName = $(this).data('recipe');
+        $('#selectedRecipeName').text(recipeName);
+        new bootstrap.Modal(document.getElementById('categoryModal')).show();
+    });
+
+    // Xử lý khi chọn danh mục trong modal
+    $('.select-category').on('click', function() {
+        const category = $(this).data('category');
+        const recipeName = $('#selectedRecipeName').text();
+
+        // Kiểm tra xem món đã tồn tại trong bất kỳ danh mục nào khác chưa
+        let existsInOtherCategory = false;
+        let existingCategory = '';
+
+        // Kiểm tra trong tất cả các danh mục
+        ['starters-container', 'main-dishes-container', 'desserts-container', 'drinks-container'].forEach(function(container) {
+            if (container !== `${category}-container`) {
+                $(`#${container} input[type="hidden"]`).each(function() {
+                    if ($(this).val() === recipeName) {
+                        existsInOtherCategory = true;
+                        existingCategory = container.replace('-container', '');
+                        return false; // break the loop
+                    }
+                });
+            }
+        });
+
+        if (existsInOtherCategory) {
+            // Hiển thị thông báo xác nhận
+            if (confirm(`Món "${recipeName}" đã tồn tại trong danh mục ${existingCategory.replace('starters', 'Khai vị').replace('main-dishes', 'Món chính').replace('desserts', 'Tráng miệng').replace('drinks', 'Đồ uống')}. Bạn có muốn chuyển nó sang danh mục ${$(this).text().trim()} không?`)) {
+                // Xóa món khỏi danh mục cũ
+                $(`#${existingCategory}-container input[type="hidden"]`).each(function() {
+                    if ($(this).val() === recipeName) {
+                        $(this).closest('.menu-item').remove();
+                    }
+                });
+
+                // Thêm vào danh mục mới
+                if (addToMenu(recipeName, category)) {
+                    $('#categoryModal').modal('hide');
+                    toastr.success('Đã chuyển ' + recipeName + ' sang ' + $(this).text().trim());
+                }
+            } else {
+                $('#categoryModal').modal('hide');
+            }
+        } else {
+            // Thêm món vào danh mục đã chọn
+            if (addToMenu(recipeName, category)) {
+                $('#categoryModal').modal('hide');
+                toastr.success('Đã thêm ' + recipeName + ' vào ' + $(this).text().trim());
+            }
+        }
+    });
+
+    // Thêm sự kiện submit form để đảm bảo dữ liệu được gửi đúng cách
+    $('#menuBuilderForm').on('submit', function() {
+        // Ghi log để debug
+        console.log('Form đang được gửi...');
+
+        // Kiểm tra xem có món ăn nào trong thực đơn không
+        let hasItems = false;
+        ['starters-container', 'main-dishes-container', 'desserts-container', 'drinks-container'].forEach(function(container) {
+            if ($(`#${container} .menu-item`).length > 0) {
+                hasItems = true;
+            }
+        });
+
+        if (!hasItems) {
+            alert('Vui lòng thêm ít nhất một món ăn vào thực đơn');
+            return false;
+        }
+
+        // Đảm bảo tất cả các món ăn đều có giá
+        let allPricesValid = true;
+        $('input[name^="price_"]').each(function() {
+            if (!$(this).val()) {
+                allPricesValid = false;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if (!allPricesValid) {
+            alert('Vui lòng nhập giá cho tất cả các món ăn');
+            return false;
+        }
+
+        return true;
+    });
+
+    // Xử lý nút xem trước thực đơn
+    $('#previewMenuBtn').on('click', function() {
+        // Kiểm tra xem có món ăn nào trong thực đơn không
+        let hasItems = false;
+        ['starters-container', 'main-dishes-container', 'desserts-container', 'drinks-container'].forEach(function(container) {
+            if ($(`#${container} .menu-item`).length > 0) {
+                hasItems = true;
+            }
+        });
+
+        if (!hasItems) {
+            alert('Vui lòng thêm ít nhất một món ăn vào thực đơn trước khi xem trước');
+            return;
+        }
+
+        // Đảm bảo tất cả các món ăn đều có giá
+        let allPricesValid = true;
+        let invalidInputs = [];
+
+        $('input[name^="price_"]').each(function() {
+            if (!$(this).val()) {
+                allPricesValid = false;
+                $(this).addClass('is-invalid');
+                invalidInputs.push($(this));
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+
+        if (!allPricesValid) {
+            alert('Vui lòng nhập giá cho tất cả các món ăn trước khi xem trước');
+            if (invalidInputs.length > 0) {
+                invalidInputs[0][0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+
+        // Tạo form ẩn để submit dữ liệu
+        const $form = $('<form>', {
+            action: '/preview_menu',
+            method: 'get',
+            target: '_blank'
+        });
+
+        // Thêm các trường từ form chính
+        $form.append($('<input>', {
+            type: 'hidden',
+            name: 'menu_title',
+            value: $('#menu_title').val()
+        }));
+
+        $form.append($('<input>', {
+            type: 'hidden',
+            name: 'menu_description',
+            value: $('#menu_description').val()
+        }));
+
+        $form.append($('<input>', {
+            type: 'hidden',
+            name: 'menu_theme',
+            value: $('#menu_theme').val()
+        }));
+
+        // Thêm các món ăn và giá - đảm bảo sử dụng tên nhất quán
+        ['starters', 'main-dishes', 'desserts', 'drinks'].forEach(function(category) {
+            $(`#${category}-container input[type="hidden"]`).each(function() {
+                const recipeName = $(this).val();
+                $form.append($('<input>', {
+                    type: 'hidden',
+                    name: category,
+                    value: recipeName
+                }));
+
+                const price = $(`input[name="price_${recipeName.replace(/ /g, '_')}"]`).val();
+                $form.append($('<input>', {
+                    type: 'hidden',
+                    name: `price_${recipeName.replace(/ /g, '_')}`,
+                    value: price
+                }));
+            });
+        });
+
+        // Thêm form vào body, submit và xóa
+        $('body').append($form);
+        $form.submit();
+        $form.remove();
+    });
+
+    // Xử lý xóa món khỏi thực đơn
+    $(document).on('click', '.remove-menu-item', function() {
+        const $menuItem = $(this).closest('.menu-item');
+        const recipeName = $menuItem.find('span').text();
+
+        // Xóa món khỏi giao diện
+        $menuItem.remove();
+
+        // Tự động lưu thực đơn sau khi xóa món
+        // Tạo form ẩn để submit dữ liệu
+        const $form = $('#menuBuilderForm');
+
+        // Gửi form để cập nhật session
+        $.ajax({
+            url: '/build_menu',
+            type: 'POST',
+            data: $form.serialize(),
+            success: function(response) {
+                console.log('Đã cập nhật thực đơn sau khi xóa món');
+                // Không reload trang để tránh mất trạng thái hiện tại
+            },
+            error: function(error) {
+                console.error('Lỗi khi cập nhật thực đơn:', error);
+            }
+        });
+    });
+
+
+
+    // Xử lý tìm kiếm món ăn
+    $('#recipeSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('.recipe-card').each(function() {
+            var recipeName = $(this).find('.recipe-name').text().toLowerCase();
+            $(this).closest('.col-md-6').toggle(recipeName.indexOf(value) > -1);
+        });
+    });
+});
+</script>
+
+<style>
+    .menu-items-container {
+        min-height: 200px;
+    }
+
+    .recipe-card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .recipe-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .tab-content {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .nav-tabs .badge {
+        margin-left: 5px;
+        font-size: 0.8rem;
+    }
+
+    /* Thêm style để làm nổi bật tên danh mục */
+    .nav-tabs .nav-link {
+        padding: 8px 16px;
+        font-weight: 500;
+    }
+
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        background-color: #f8f9fa;
+        border-bottom-color: #f8f9fa;
+    }
+
+    .category-name {
+        display: inline-block;
+        color: #495057;
+    }
+
+    .nav-link.active .category-name {
+        color: #0d6efd;
+    }
+
+    .is-invalid {
+        border-color: #dc3545;
+        padding-right: calc(1.5em + 0.75rem);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .recipe-category-selection .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .recipe-category-selection .btn {
+        flex: 1;
+        white-space: nowrap;
+        min-width: 100px;
+    }
+
+    .recipe-category-selection .btn-check:checked + .btn {
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

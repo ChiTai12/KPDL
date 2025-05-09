@@ -1,0 +1,144 @@
+{% extends "base.html" %} {% block content %}
+<div class="login-page">
+  <!-- Background overlay -->
+  <div class="bg-overlay"></div>
+
+  <!-- Login form container -->
+  <div class="container">
+    <div class="row justify-content-center align-items-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+          <div class="card-body p-5">
+            <div class="text-center mb-4">
+              <i class="fas fa-utensils fa-3x text-primary mb-3"></i>
+              <h2 class="fw-bold">Đăng nhập</h2>
+              <p class="text-muted">Chào mừng bạn đến với Recipe App</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %} {%
+            if messages %} {% for category, message in messages %}
+            <div
+              class="alert alert-{{ category }} alert-dismissible fade show"
+              role="alert"
+            >
+              {{ message }}
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+              <div class="form-floating mb-3">
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  required
+                />
+                <label for="email">Email</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  placeholder="Password"
+                  required
+                />
+                <label for="password">Mật khẩu</label>
+              </div>
+              <div class="form-check mb-3">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="remember"
+                  name="remember"
+                />
+                <label class="form-check-label" for="remember">
+                  Ghi nhớ đăng nhập
+                </label>
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                </button>
+              </div>
+            </form>
+
+            <div class="text-center mt-4">
+              <p class="mb-0">
+                Chưa có tài khoản?
+                <a
+                  href="{{ url_for('register') }}"
+                  class="text-primary text-decoration-none"
+                  >Đăng ký ngay</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .login-page {
+    min-height: calc(100vh - 72px);
+    position: relative;
+  }
+
+  .bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url('https://wallpaperaccess.com/full/1306038.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(2px);
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .row {
+    min-height: calc(100vh - 72px);
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  .form-floating > label {
+    padding-left: 1rem;
+  }
+
+  .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+
+  .btn-primary {
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+  }
+</style>
+{% endblock %}

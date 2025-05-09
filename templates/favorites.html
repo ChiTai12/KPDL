@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0">Món ăn yêu thích của bạn</h2>
+            <span class="badge bg-primary ms-2">{{ favorite_recipes|length }}</span>
+        </div>
+        {% if favorite_recipes %}
+        <button id="addSelectedToMenu" class="btn btn-success" disabled>
+            <i class="fas fa-plus me-1"></i>Thêm món đã chọn vào thực đơn
+        </button>
+        {% endif %}
+          </div>
+
+    {% if favorite_recipes %}
+    <div class="row g-4">
+        {% for recipe in favorite_recipes %}
+        <div class="col-md-6 col-lg-4" data-recipe="{{ recipe.name }}">
+            <div class="card h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0">
+                    <div class="form-check">
+                        <input class="form-check-input recipe-checkbox" type="checkbox" value="{{ recipe.name }}" id="recipe{{ loop.index }}">
+                        <label class="form-check-label" for="recipe{{ loop.index }}">
+                            Chọn món
+                        </label>
+              </div>
+                    <button class="btn btn-sm btn-outline-danger unfavorite-btn" onclick="toggleFavorite('{{ recipe.name }}')" title="Bỏ thích">
+                        <i class="fas fa-heart"></i>
+                </button>
+              </div>
+                <img src="{{ recipe.img_src }}" class="card-img-top" alt="{{ recipe.name }}" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ recipe.name }}</h5>
+                    <div class="d-flex align-items-center text-muted mb-2">
+                        <div class="me-3">
+                            {% set rating = recipe.rating|round|int %}
+                            {% for i in range(rating) %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% endfor %}
+                            {% for i in range(5 - rating) %}
+                            <i class="far fa-star text-warning"></i>
+                            {% endfor %}
+                        </div>
+                        <div>
+                            <i class="far fa-clock me-1"></i>{{ recipe.total_time }}
+            </div>
+          </div>
+        </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('recipe_detail', recipe_name=recipe.name) }}" class="btn btn-outline-primary w-100">
+                        Chi tiết
+                    </a>
+                </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Bạn chưa có món ăn yêu thích nào.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal nhập giá và chọn danh mục -->
+<div class="modal fade" id="priceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm vào thực đơn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="selectedRecipesList">
+                    <!-- Danh sách món ăn sẽ được thêm vào đây -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="confirmAddToMenu">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleFavorite(recipeName) {
+    fetch(`/toggle_favorite/${encodeURIComponent(recipeName)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'removed') {
+            const card = document.querySelector(`[data-recipe="${recipeName}"]`);
+            if (card) {
+                  card.remove();
+
+                const badge = document.querySelector('.badge');
+                const currentCount = parseInt(badge.textContent) - 1;
+                badge.textContent = currentCount;
+
+                if (currentCount === 0) {
+                      location.reload();
+                  }
+
+                toastr.success('Đã bỏ thích món ăn');
+            }
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+        toastr.error('Không thể cập nhật trạng thái yêu thích');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.recipe-checkbox');
+    const addSelectedBtn = document.getElementById('addSelectedToMenu');
+    const priceModal = new bootstrap.Modal(document.getElementById('priceModal'));
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedBoxes = document.querySelectorAll('.recipe-checkbox:checked');
+            addSelectedBtn.disabled = checkedBoxes.length === 0;
+        });
+    });
+
+    addSelectedBtn.addEventListener('click', function() {
+        const selectedRecipes = Array.from(document.querySelectorAll('.recipe-checkbox:checked'))
+            .map(cb => ({name: cb.value}));
+
+        if (selectedRecipes.length > 0) {
+            // Tạo danh sách món ăn và input giá
+            const recipesList = document.getElementById('selectedRecipesList');
+            recipesList.innerHTML = '';
+
+            selectedRecipes.forEach(recipe => {
+                const div = document.createElement('div');
+                div.className = 'mb-4';
+                div.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label mb-0">${recipe.name}</label>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-recipe" data-recipe="${recipe.name}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="mb-2">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-info category-btn" data-recipe="${recipe.name}" data-category="appetizer">
+                                <i class="fas fa-utensils"></i> Khai vị
+                            </button>
+                            <button class="btn btn-outline-success category-btn" data-recipe="${recipe.name}" data-category="main">
+                                <i class="fas fa-drumstick-bite"></i> Món chính
+                            </button>
+                            <button class="btn btn-outline-warning category-btn" data-recipe="${recipe.name}" data-category="dessert">
+                                <i class="fas fa-ice-cream"></i> Tráng miệng
+                            </button>
+                            <button class="btn btn-outline-primary category-btn" data-recipe="${recipe.name}" data-category="drink">
+                                <i class="fas fa-glass-martini-alt"></i> Đồ uống
+                            </button>
+                        </div>
+                        <input type="hidden" class="recipe-category" data-recipe="${recipe.name}">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text">Giá</span>
+                        <input type="number"
+                               class="form-control recipe-price"
+                               name="price_${recipe.name.replace(/ /g, '_')}"
+                               data-recipe="${recipe.name}"
+                               placeholder="Nhập giá..."
+                               required>
+                        <span class="input-group-text">đ</span>
+                    </div>
+                `;
+                recipesList.appendChild(div);
+            });
+
+            // Xử lý nút chọn danh mục
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const recipeName = this.dataset.recipe;
+                    const category = this.dataset.category;
+
+                    // Bỏ active các nút khác
+                    document.querySelectorAll(`.category-btn[data-recipe="${recipeName}"]`)
+                        .forEach(b => b.classList.remove('active'));
+
+                    // Active nút được chọn
+                    this.classList.add('active');
+
+                    // Lưu category
+                    document.querySelector(`.recipe-category[data-recipe="${recipeName}"]`).value = category;
+                });
+            });
+
+            // Xử lý nút xóa món
+            document.querySelectorAll('.remove-recipe').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const recipeName = this.dataset.recipe;
+                    // Bỏ check checkbox tương ứng
+                    document.querySelector(`input[value="${recipeName}"]`).checked = false;
+                    // Xóa khỏi modal
+                    this.closest('.mb-4').remove();
+                    // Nếu không còn món nào thì đóng modal
+                    if (recipesList.children.length === 0) {
+                        priceModal.hide();
+                        addSelectedBtn.disabled = true;
+                    }
+                });
+            });
+
+            // Hiển thị modal
+            priceModal.show();
+        }
+    });
+
+    // Xử lý nút xác nhận thêm vào thực đơn
+    document.getElementById('confirmAddToMenu').addEventListener('click', function() {
+        const selectedRecipes = [];
+        const missingCategories = [];
+
+        // Kiểm tra từng món được chọn
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const recipeName = checkbox.value;
+            const category = document.querySelector(`.recipe-category[data-recipe="${recipeName}"]`).value;
+            const priceInput = document.querySelector(`.recipe-price[data-recipe="${recipeName}"]`);
+
+            if (!category) {
+                missingCategories.push(recipeName);
+            } else if (!priceInput.value || priceInput.value <= 0) {
+                alert(`Vui lòng nhập giá hợp lệ cho món ${recipeName}`);
+                return;
+            } else {
+                selectedRecipes.push({
+                    name: recipeName,
+                    category: category,
+                    price: priceInput.value
+                });
+            }
+        });
+
+        // Nếu có món chưa chọn danh mục
+        if (missingCategories.length > 0) {
+            alert('Vui lòng chọn danh mục cho các món sau:\n' + missingCategories.join('\n'));
+            return;
+        }
+
+        // Nếu không có món nào được chọn
+        if (selectedRecipes.length === 0) {
+            alert('Vui lòng chọn ít nhất một món để thêm vào thực đơn');
+            return;
+        }
+
+        // Hiển thị thông báo đang xử lý
+        toastr.info('Đang xử lý...');
+
+        // Gửi request để thêm vào thực đơn
+        fetch('{{ url_for("add_to_menu") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ recipes: selectedRecipes })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Hiển thị thông báo thành công
+                if (data.message) {
+                    toastr.success(data.message);
+                } else {
+                    toastr.success('Đã thêm món vào thực đơn thành công');
+                }
+
+                // Chuyển hướng đến trang build_menu sau 1 giây
+                setTimeout(function() {
+                    window.location.href = '{{ url_for("build_menu") }}';
+                }, 1000);
+            } else {
+                toastr.error(data.error || 'Có lỗi xảy ra khi thêm món vào thực đơn');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            toastr.error('Có lỗi xảy ra khi thêm món vào thực đơn');
+        });
+    });
+});
+</script>
+{% endblock %}

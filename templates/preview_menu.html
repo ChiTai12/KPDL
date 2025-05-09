@@ -1,0 +1,637 @@
+{% extends "base.html" %} {% block content %}
+<div class="menu-wrapper">
+  <div class="menu-container">
+    <div class="restaurant-header">
+      <div class="logo-area">
+        <i class="fas fa-utensils restaurant-logo"></i>
+      </div>
+      <h1 class="restaurant-name">Nhà Hàng Của Nhóm 18</h1>
+      <div class="restaurant-subtitle">Khai Phá Dữ Liệu</div>
+      <div class="menu-ornament">❦</div>
+      <h2 class="menu-title">{{ menu_title }}</h2>
+      {% if menu_description %}
+      <p class="menu-description">{{ menu_description }}</p>
+      {% endif %}
+      <div class="header-decoration">
+        <div class="decoration-line"></div>
+        <i class="fas fa-star decoration-star"></i>
+        <div class="decoration-line"></div>
+      </div>
+    </div>
+
+    <div class="menu-sections-container">
+      {% for category, items in menu_items.items() %} {% if items %}
+      <div class="menu-section">
+        <div class="section-header">
+          {% if category == 'starters' %}
+          <h3 class="menu-section-title">
+            <i class="fas fa-utensils"></i> Khai vị
+          </h3>
+          {% elif category == 'main_dishes' or category == 'main-dishes' %}
+          <h3 class="menu-section-title">
+            <i class="fas fa-drumstick-bite"></i> Món chính
+          </h3>
+          {% elif category == 'desserts' %}
+          <h3 class="menu-section-title">
+            <i class="fas fa-ice-cream"></i> Tráng miệng
+          </h3>
+          {% elif category == 'drinks' %}
+          <h3 class="menu-section-title">
+            <i class="fas fa-glass-martini-alt"></i> Đồ uống
+          </h3>
+          {% endif %}
+          <div class="section-decoration">
+            <div class="decoration-dot"></div>
+            <div class="decoration-line"></div>
+            <div class="decoration-dot"></div>
+          </div>
+        </div>
+
+        <div class="menu-items">
+          {% for item in items %}
+          <div class="menu-item">
+            <div class="item-image-container">
+              <img
+                src="{{ item.img_src }}"
+                class="menu-item-image"
+                alt="{{ item.name }}"
+              />
+            </div>
+            <div class="item-content">
+              <div class="item-header">
+                <h4 class="menu-item-name">{{ item.name }}</h4>
+                <div class="menu-item-price">
+                  <span class="price-label">Giá: </span>
+                  <span class="price-value">
+                    {% if item.price %}
+                      {{ "{:,}".format(item.price|int) }}đ
+                    {% else %}
+                      0đ
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+              <div class="item-details">
+                <div class="rating">
+                  {% set rating = item.rating|round|int %} {% for i in
+                  range(rating) %}
+                  <i class="fas fa-star"></i>
+                  {% endfor %} {% for i in range(5 - rating) %}
+                  <i class="far fa-star"></i>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %} {% endfor %}
+    </div>
+
+    <div class="restaurant-footer">
+      <div class="footer-decoration">
+        <div class="decoration-line"></div>
+        <i class="fas fa-heart decoration-heart"></i>
+        <div class="decoration-line"></div>
+      </div>
+      <p class="footer-text">Chúc quý khách ngon miệng!</p>
+      <div class="contact-info">
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <span>Liên hệ đặt bàn: 0394863878</span>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>267 Lê Trọng Tấn phường Sơn Kỳ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mb-5">
+      <button class="print-button" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>In thực đơn
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@700&display=swap');
+
+  /* Reset and base styles */
+  * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+  }
+
+  body {
+      background-color: #f5f5f5;
+  }
+
+  .menu-wrapper {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      position: relative;
+      z-index: 1000; /* Ensure menu is above other elements */
+  }
+
+  /* General styles */
+  .menu-container {
+      width: 210mm; /* A4 width */
+      min-height: 297mm; /* A4 height */
+      margin: 0 auto;
+      padding: 20mm;
+      background-color: #FFF9F0;
+      color: #4A3728;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .print-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .print-button:hover {
+      background-color: #218838;
+  }
+
+  /* Hide Recipe App overlay */
+  .recipe-app-header {
+      display: none !important;
+  }
+
+  /* Restaurant header */
+  .restaurant-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+  }
+
+  .logo-area {
+      margin-bottom: 15px;
+  }
+
+  .restaurant-logo {
+      font-size: 2.5rem;
+      color: #8B4513;
+  }
+
+  .restaurant-name {
+      font-family: 'Dancing Script', cursive;
+      font-size: 3.5rem;
+      color: #8B4513;
+      margin-bottom: 5px;
+      text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.2);
+  }
+
+  .restaurant-subtitle {
+      font-size: 1.5rem;
+      color: #A0522D;
+      margin-bottom: 15px;
+      font-style: italic;
+  }
+
+  .menu-ornament {
+      font-size: 1.8rem;
+      color: #8B4513;
+      margin: 15px 0;
+  }
+
+  .menu-title {
+      font-size: 2rem;
+      color: #8B4513;
+      margin: 10px 0;
+      font-family: 'Playfair Display', serif;
+  }
+
+  .header-decoration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 30px 0;
+  }
+
+  .decoration-line {
+      height: 2px;
+      background: linear-gradient(to right, transparent, #8B4513, transparent);
+      flex-grow: 1;
+      margin: 0 15px;
+  }
+
+  .decoration-star {
+      color: #8B4513;
+      font-size: 1.5rem;
+  }
+
+  /* Menu sections */
+  .menu-section {
+      margin-bottom: 40px;
+      page-break-inside: avoid;
+      width: 100%;
+  }
+
+  .section-header {
+      text-align: center;
+      margin-bottom: 25px;
+      position: relative;
+  }
+
+  .menu-section-title {
+      font-size: 2rem;
+      color: #8B4513;
+      margin-bottom: 15px;
+      font-family: 'Dancing Script', cursive;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+  }
+
+  .menu-section-title i {
+      font-size: 1.5rem;
+  }
+
+  .section-decoration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+  }
+
+  .decoration-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #8B4513;
+  }
+
+  /* Menu items */
+  .menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 0 15px;
+  }
+
+  .menu-item {
+      background-color: #FFF;
+      border: 2px solid #DEB887;
+      border-radius: 15px;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 3px 10px rgba(139, 69, 19, 0.1);
+      width: 100%;
+      min-height: 100px;
+  }
+
+  .item-image-container {
+      width: 70px;
+      height: 70px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #DEB887;
+  }
+
+  .menu-item-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+  }
+
+  .item-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+  }
+
+  .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+  }
+
+  .menu-item-name {
+      font-size: 1.2rem;
+      color: #8B4513;
+      font-weight: bold;
+      margin: 0;
+      flex: 1;
+      padding-right: 15px;
+  }
+
+  .menu-item-price {
+      white-space: nowrap;
+      color: #CD853F;
+      font-weight: bold;
+  }
+
+  .price-label {
+      font-size: 0.9rem;
+  }
+
+  .price-value {
+      font-size: 1.1rem;
+  }
+
+  .item-details {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+  }
+
+  .rating {
+      color: #FFD700;
+      font-size: 0.9rem;
+  }
+
+  .time {
+      display: none; /* Hide time information by default */
+  }
+
+  /* Footer */
+  .restaurant-footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 30px;
+      border-top: 2px solid #DEB887;
+  }
+
+  .footer-decoration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+  }
+
+  .decoration-heart {
+      color: #8B4513;
+      font-size: 1.5rem;
+  }
+
+  .footer-text {
+      font-family: 'Dancing Script', cursive;
+      font-size: 2rem;
+      color: #8B4513;
+      margin-bottom: 20px;
+  }
+
+  .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: #666;
+  }
+
+  .contact-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+  }
+
+  /* Empty state styles */
+  .empty-state {
+      text-align: center;
+      padding: 40px;
+      margin: auto;
+      width: 100%;
+      max-width: 600px;
+  }
+
+  .empty-state-message {
+      font-size: 1.5rem;
+      color: #8B4513;
+      margin: 20px 0;
+      font-family: 'Playfair Display', serif;
+  }
+
+  .empty-state-icon {
+      font-size: 3rem;
+      color: #DEB887;
+      margin-bottom: 20px;
+  }
+
+  /* Menu sections container */
+  .menu-sections-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 180mm; /* Slightly smaller than A4 width for better margins */
+  }
+
+  /* Print styles */
+  @media print {
+      @page {
+          size: A4;
+          margin: 0;
+      }
+
+      .menu-wrapper {
+          padding: 0;
+          background: none;
+      }
+
+      .menu-container {
+          width: 210mm;
+          min-height: 297mm;
+          padding: 12mm;
+          margin: 0;
+          box-shadow: none;
+          background-color: #FFF !important;
+          display: flex;
+          flex-direction: column;
+      }
+
+      .print-button {
+          display: none !important;
+      }
+
+      /* Ensure prices are visible */
+      .menu-item-price {
+          color: #CD853F !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+      }
+
+      /* Hide any potential overlays */
+      .recipe-app-header,
+      .app-header,
+      .navbar {
+          display: none !important;
+      }
+
+      /* Ensure content is above everything else when printing */
+      * {
+          position: relative !important;
+          z-index: 1000 !important;
+      }
+
+      /* Remove any margins/padding from body and html */
+      body, html {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #FFF !important;
+      }
+
+      /* Ensure all text and colors print properly */
+      .menu-item-name,
+      .menu-section-title,
+      .restaurant-name,
+      .restaurant-subtitle,
+      .footer-text,
+      .contact-info,
+      .rating {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+      }
+
+      .price-label, .price-value {
+          color: inherit !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+      }
+
+      .time {
+          display: none !important;
+      }
+
+      .empty-state {
+          display: none !important;
+      }
+
+      .menu-items {
+          gap: 15px;
+      }
+
+      .menu-section {
+          margin-bottom: 30px;
+          break-inside: avoid;
+      }
+
+      .menu-item {
+          break-inside: avoid;
+          background-color: #FFF !important;
+          border-color: #8B4513 !important;
+      }
+
+      .menu-item-name {
+          font-size: 11pt;
+      }
+
+      .menu-item-price {
+          font-size: 10pt;
+      }
+
+      .rating {
+          font-size: 9pt;
+      }
+
+      .restaurant-name {
+          font-size: 32pt;
+      }
+
+      .restaurant-subtitle {
+          font-size: 16pt;
+      }
+
+      .menu-title {
+          font-size: 18pt;
+      }
+  }
+</style>
+
+<!-- Add this script to handle Recipe App overlay and printing -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Remove or hide any Recipe App elements that might be present
+      const recipeAppElements = document.querySelectorAll('.recipe-app-header, .app-header, .navbar');
+      recipeAppElements.forEach(element => {
+          element.style.display = 'none';
+      });
+
+      let printStartTime = 0;
+      const PRINT_TIMEOUT = 1000; // 1 second threshold
+
+      // Handle print button click
+      document.querySelector('.print-button').addEventListener('click', function(e) {
+          e.preventDefault();
+          printStartTime = Date.now();
+          window.print();
+      });
+
+      // After printing, remove items from favorites only if actually printed
+      window.addEventListener('afterprint', function() {
+          // Only consider it a real print if more than PRINT_TIMEOUT ms has passed
+          // This helps distinguish between actual printing and print preview/cancel
+          if (Date.now() - printStartTime < PRINT_TIMEOUT) {
+              return; // Too quick - likely a cancel or preview
+          }
+
+          // Get all recipe names from the menu
+          const menuItems = {{ menu_items|tojson|safe }};
+          const recipeNames = [];
+
+          // Collect all recipe names
+          Object.values(menuItems).forEach(category => {
+              category.forEach(item => {
+                  if (item.name) {
+                      recipeNames.push(item.name);
+                  }
+              });
+          });
+
+          // Show confirmation dialog
+          if (confirm('Bạn có muốn xóa các món ăn này khỏi danh sách yêu thích không?')) {
+              // Remove items from favorites
+              if (recipeNames.length > 0) {
+                  fetch('/remove_from_favorites', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ recipe_ids: recipeNames })
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          // Redirect to favorites page after successful removal
+                          window.location.href = '/favorites';
+                      } else {
+                          console.error('Error:', data.message);
+                      }
+                  })
+                  .catch(error => console.error('Error:', error));
+              }
+          }
+      });
+  });
+</script>
+{% endblock %}

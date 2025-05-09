@@ -1,0 +1,869 @@
+{% extends "base.html" %} {% block content %}
+<!-- Hero Banner -->
+<div
+  class="hero-banner"
+  style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/assets/img/img1.jpg'); background-size: cover; background-position: center; height: 500px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: -24px; padding-bottom: 30px;"
+>
+  <div class="banner-content">
+    <h1
+      class="display-4 mb-4"
+      style="font-weight: 900; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);"
+    >
+      KHÁM PHÁ CÔNG THỨC NẤU ĂN
+    </h1>
+    <p class="lead mb-4">
+      Hàng nghìn công thức nấu ăn tuyệt vời đang chờ bạn khám phá
+    </p>
+    <button class="btn btn-primary btn-lg scroll-to-search">
+      Tìm Công Thức Ngay
+    </button>
+  </div>
+</div>
+
+<div style="height: 40px;"></div>
+<!-- Thêm div trống để tạo khoảng cách -->
+
+<!-- Main Content -->
+<div class="container" style="margin-top: 0; padding-top: 0;">
+  <div class="row">
+    <!-- Search Section -->
+    <div class="col-md-8" id="search-section">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-success">Tìm Công Thức Nấu Ăn</h2>
+          <p class="text-muted">
+            Khám phá hàng nghìn công thức nấu ăn tuyệt vời
+          </p>
+
+          <div class="mb-4">
+            <label for="recipe-select" class="form-label">Chọn món ăn:</label>
+            <select class="form-select" id="recipe-select">
+              <option selected>Chọn một món...</option>
+              {% for recipe in recipes %}
+              <option value="{{ recipe }}">{{ recipe }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button class="btn btn-success mb-4" id="search-similar-btn">
+            <i class="fas fa-search"></i> Tìm công thức tương tự
+          </button>
+
+          <div class="mb-4">
+            <label for="ingredients-input" class="form-label"
+              >Nhập nguyên liệu bạn có:</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="ingredients-input"
+              placeholder="Ví dụ: thịt bò, hành tây, cà chua"
+            />
+            <div class="form-text">
+              Nhập các nguyên liệu cách nhau bằng dấu phẩy
+            </div>
+          </div>
+
+          <button class="btn btn-success" id="search-by-ingredients-btn">
+            <i class="fas fa-utensils"></i> Tìm công thức theo nguyên liệu
+          </button>
+
+          <!-- Hiển thị trạng thái loading khi đang tìm kiếm -->
+          <div id="loading-status" class="alert alert-info mt-3" style="display: none;">
+            <div class="d-flex align-items-center">
+              <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div>
+                <strong>Đang tìm công thức phù hợp...</strong>
+                <div class="small">Chúng tôi đang tìm kiếm những món ăn ngon nhất cho bạn</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Rated Recipes -->
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title text-warning">
+            <i class="fas fa-star"></i> Công thức được đánh giá cao
+          </h2>
+          <p class="text-muted">Những món ăn được yêu thích nhất</p>
+
+          <div class="row">
+            {% for recipe in top_recipes %}
+            <div class="col-md-6 mb-4">
+              <div class="card h-100">
+                <a
+                  href="{{ url_for('recipe_detail', recipe_name=recipe.recipe_name) }}"
+                  class="text-decoration-none"
+                >
+                  <img
+                    src="{{ recipe.img_src }}"
+                    class="card-img-top"
+                    alt="{{ recipe.recipe_name }}"
+                    style="height: 200px; object-fit: cover;"
+                  />
+                  <div class="card-body">
+                    <h5 class="card-title text-dark">
+                      {{ recipe.recipe_name }}
+                    </h5>
+                    <p class="card-text">
+                      <small class="text-muted">
+                        <i class="fas fa-clock"></i> {{ recipe.total_time }}
+                        <span class="ms-2">
+                          <i class="fas fa-star text-warning"></i> {{
+                          "%.1f"|format(recipe.rating) }}
+                        </span>
+                      </small>
+                    </p>
+                  </div>
+                </a>
+                <div class="card-footer bg-white">
+                  <div class="d-flex justify-content-between">
+                    <a
+                      href="{{ url_for('recipe_detail', recipe_name=recipe.recipe_name) }}"
+                      class="btn btn-outline-primary btn-sm"
+                    >
+                      <i class="fas fa-info-circle"></i> Chi tiết
+                    </a>
+                    <a
+                      href="{{ url_for('build_menu') }}?recipe={{ recipe.recipe_name }}"
+                      class="btn btn-outline-success btn-sm"
+                    >
+                      <i class="fas fa-plus"></i> Thêm vào thực đơn
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popular Ingredients Sidebar -->
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title text-success">
+            <i class="fas fa-leaf"></i> <span style="white-space: nowrap;">Nguyên liệu phổ biến</span>
+          </h2>
+          <div class="list-group">
+            {% for ingredient, count in popular_ingredients.items() %}
+            <a
+              href="#"
+              class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+            >
+              <span class="text-truncate" style="max-width: 75%;"
+                >{{ ingredient }}</span
+              >
+              <span class="badge bg-primary rounded-pill">{{ count }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block styles %}
+<style>
+  /* Navbar styles */
+  .navbar {
+      height: 50px;
+      line-height: 50px;
+      padding-top: 0;
+      padding-bottom: 0;
+  }
+
+  /* Main content styles */
+  .container {
+      padding-top: 0;
+  }
+
+  .hero-banner {
+      position: relative;
+      overflow: hidden;
+      margin-top: 0;
+      margin-bottom: 20px;
+  }
+
+  .banner-content {
+      max-width: 800px;
+      padding: 2rem;
+  }
+
+  .banner-content h1 {
+      font-size: 3.5rem;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .banner-content p {
+      font-size: 1.5rem;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .banner-content .btn {
+      font-size: 1.2rem;
+      padding: 0.75rem 2rem;
+      background-color: #ff6b6b;
+      border: none;
+      transition: all 0.3s ease;
+  }
+
+  .banner-content .btn:hover {
+      background-color: #ff5252;
+      transform: translateY(-2px);
+  }
+
+  /* Loading animation styles */
+  .loading-container {
+      margin: 30px auto;
+      text-align: center;
+      max-width: 320px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e2f3ff 50%, #e9f7ef 100%);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: container-appear 0.6s forwards, container-glow 3s infinite alternate;
+      opacity: 0;
+      transform: translateY(10px);
+      border: 1px solid rgba(255,255,255,0.8);
+      backdrop-filter: blur(5px);
+  }
+
+  /* Hiển thị loading container khi active */
+  .loading-container.active {
+      opacity: 1 !important;
+      transform: translateY(0) scale(1.02) !important;
+      display: block !important;
+      box-shadow: 0 15px 40px rgba(46, 204, 113, 0.25), 0 0 20px rgba(52, 152, 219, 0.2) !important;
+  }
+
+  /* Loading animation sẽ được hiển thị bằng JavaScript */
+  #loading-spinner-container {
+      display: none;
+  }
+
+  .loading-icon {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 20px;
+  }
+
+  .cooking-pot {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(145deg, #2ecc71, #27ae60, #16a085);
+      border-radius: 50% 50% 10px 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      animation: pot-glow 3s ease-in-out infinite alternate;
+      border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  .cooking-pot:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 2s infinite;
+      z-index: 5;
+  }
+
+  .pot-lid {
+      position: absolute;
+      width: 100px;
+      height: 25px;
+      background: linear-gradient(145deg, #27ae60, #219653, #16a085);
+      border-radius: 50%;
+      top: -12px;
+      left: -5px;
+      z-index: 2;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      animation: lid-shake 3s ease-in-out infinite;
+      border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  .pot-handle {
+      position: absolute;
+      width: 25px;
+      height: 18px;
+      background: linear-gradient(145deg, #27ae60, #219653);
+      border-radius: 0 0 12px 12px;
+      top: 0;
+      left: 32px;
+      z-index: 3;
+      box-shadow: 2px 4px 6px rgba(0,0,0,0.2);
+  }
+
+  .steam {
+      position: absolute;
+      background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 70%);
+      border-radius: 50%;
+      z-index: 1;
+      filter: blur(2px);
+      box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  }
+
+  .steam-1 {
+      width: 18px;
+      height: 18px;
+      top: -25px;
+      left: 20px;
+      animation: steam-rise 2.5s ease-in-out infinite, steam-glow 2s ease-in-out infinite alternate;
+  }
+
+  .steam-2 {
+      width: 14px;
+      height: 14px;
+      top: -22px;
+      left: 45px;
+      animation: steam-rise 2.2s ease-in-out 0.6s infinite, steam-glow 1.8s ease-in-out 0.3s infinite alternate;
+  }
+
+  .steam-3 {
+      width: 16px;
+      height: 16px;
+      top: -28px;
+      left: 65px;
+      animation: steam-rise 2.8s ease-in-out 1.2s infinite, steam-glow 2.2s ease-in-out 0.6s infinite alternate;
+  }
+
+  .bubble {
+      position: absolute;
+      background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.5) 70%);
+      border-radius: 50%;
+      animation: bubble-rise 2s ease-in-out infinite;
+      filter: blur(0.5px);
+      box-shadow: 0 0 5px rgba(255,255,255,0.6), inset 0 0 3px rgba(255,255,255,0.6);
+  }
+
+  .bubble-1 {
+      width: 20px;
+      height: 20px;
+      bottom: 15px;
+      left: 20px;
+      animation: bubble-rise 2.2s ease-in-out infinite, bubble-pulse 1.5s ease-in-out infinite alternate;
+  }
+
+  .bubble-2 {
+      width: 14px;
+      height: 14px;
+      bottom: 25px;
+      left: 45px;
+      animation: bubble-rise 1.8s ease-in-out 0.5s infinite, bubble-pulse 1.2s ease-in-out 0.3s infinite alternate;
+  }
+
+  .bubble-3 {
+      width: 17px;
+      height: 17px;
+      bottom: 18px;
+      left: 65px;
+      animation: bubble-rise 2s ease-in-out 1s infinite, bubble-pulse 1.7s ease-in-out 0.6s infinite alternate;
+  }
+
+  /* Thêm bong bóng nhỏ */
+  .bubble-4 {
+      width: 8px;
+      height: 8px;
+      bottom: 30px;
+      left: 30px;
+      animation: bubble-rise 1.5s ease-in-out 0.2s infinite, bubble-pulse 1s ease-in-out 0.1s infinite alternate;
+  }
+
+  .bubble-5 {
+      width: 6px;
+      height: 6px;
+      bottom: 35px;
+      left: 55px;
+      animation: bubble-rise 1.3s ease-in-out 0.7s infinite, bubble-pulse 0.8s ease-in-out 0.5s infinite alternate;
+  }
+
+  .loading-text {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #2d3436;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+      animation: text-pulse 2s ease-in-out infinite alternate, text-shimmer 3s infinite;
+      background: linear-gradient(90deg, #2d3436, #4a69bd, #1e3799, #2d3436);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+  }
+
+  .loading-text::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: translateX(-100%);
+      animation: text-shine 2s infinite;
+  }
+
+  .loading-subtext {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #636e72;
+      font-style: italic;
+      animation: subtext-appear 1s forwards, subtext-fade 3s 1s infinite alternate;
+      opacity: 0;
+      transform: translateY(5px);
+      animation-delay: 0.3s;
+      text-shadow: 0 0 1px rgba(0,0,0,0.1);
+  }
+
+  .loading-progress {
+      margin-top: 25px;
+      height: 10px;
+      background: linear-gradient(to right, #f5f7fa, #e9ecef);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1), 0 1px 1px rgba(255,255,255,0.7);
+      position: relative;
+  }
+
+  .loading-progress::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+      pointer-events: none;
+  }
+
+  .loading-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #27ae60, #2ecc71, #3498db, #27ae60);
+      background-size: 300% 100%;
+      border-radius: 6px;
+      animation: progress 2.5s ease-in-out infinite alternate,
+                 gradient-shift 4s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+  }
+
+  @keyframes container-appear {
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  @keyframes container-glow {
+      0% {
+          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      }
+      100% {
+          box-shadow: 0 15px 40px rgba(46, 204, 113, 0.25), 0 0 25px rgba(52, 152, 219, 0.3);
+      }
+  }
+
+  @keyframes subtext-appear {
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  @keyframes subtext-fade {
+      0% {
+          opacity: 0.7;
+      }
+      100% {
+          opacity: 1;
+      }
+  }
+
+  @keyframes pot-glow {
+      0% {
+          box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+      }
+      50% {
+          box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5), 0 0 15px rgba(46, 204, 113, 0.3);
+      }
+      100% {
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3), 0 0 10px rgba(46, 204, 113, 0.2);
+      }
+  }
+
+  @keyframes text-pulse {
+      0% {
+          opacity: 0.9;
+          transform: scale(0.98);
+      }
+      100% {
+          opacity: 1;
+          transform: scale(1.02);
+      }
+  }
+
+  @keyframes text-shimmer {
+      0% {
+          background-position: 0% 50%;
+      }
+      100% {
+          background-position: 100% 50%;
+      }
+  }
+
+  @keyframes text-shine {
+      0% {
+          transform: translateX(-100%);
+      }
+      60%, 100% {
+          transform: translateX(100%);
+      }
+  }
+
+  @keyframes gradient-shift {
+      0% {
+          background-position: 0% 50%;
+      }
+      50% {
+          background-position: 100% 50%;
+      }
+      100% {
+          background-position: 0% 50%;
+      }
+  }
+
+  @keyframes shimmer {
+      0% {
+          transform: translateX(-100%);
+      }
+      100% {
+          transform: translateX(100%);
+      }
+  }
+
+  @keyframes spin {
+      to { transform: rotate(360deg); }
+  }
+
+  @keyframes steam-rise {
+      0% {
+          transform: translateY(0) scale(1);
+          opacity: 0.9;
+      }
+      100% {
+          transform: translateY(-40px) scale(2.5);
+          opacity: 0;
+      }
+  }
+
+  @keyframes steam-glow {
+      0% {
+          filter: blur(2px);
+          box-shadow: 0 0 5px rgba(255,255,255,0.6);
+      }
+      100% {
+          filter: blur(3px);
+          box-shadow: 0 0 12px rgba(255,255,255,0.9);
+      }
+  }
+
+  @keyframes bubble-rise {
+      0% {
+          transform: translateY(0) scale(1);
+          opacity: 0.8;
+      }
+      50% {
+          opacity: 1;
+          transform: scale(1.1) translateY(-10px);
+      }
+      100% {
+          transform: translateY(-25px) scale(0.8);
+          opacity: 0;
+      }
+  }
+
+  @keyframes bubble-pulse {
+      0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 3px rgba(255,255,255,0.4);
+      }
+      100% {
+          transform: scale(1.05);
+          box-shadow: 0 0 8px rgba(255,255,255,0.7);
+      }
+  }
+
+  @keyframes lid-shake {
+      0%, 100% {
+          transform: rotate(0deg);
+      }
+      25% {
+          transform: rotate(-3deg);
+      }
+      75% {
+          transform: rotate(3deg);
+      }
+  }
+
+  @keyframes progress {
+      0% { width: 15%; }
+      50% { width: 45%; }
+      100% { width: 85%; }
+  }
+</style>
+{% endblock %} {% block scripts %}
+<script>
+  $(document).ready(function() {
+      // Xử lý scroll khi click nút tìm kiếm
+      $('.scroll-to-search').on('click', function() {
+          $('html, body').animate({
+              scrollTop: $('#search-section').offset().top - 56 // Trừ đi chiều cao của navbar
+          }, 800); // 800ms là thời gian scroll
+      });
+
+      // Hàm hiển thị loading animation
+      function showLoadingSpinner() {
+          // Hiển thị thông báo loading đơn giản
+          $('#loading-status').fadeIn(300);
+          return $('#loading-status');
+      }
+
+      // Hàm ẩn loading spinner
+      function hideLoadingSpinner() {
+          // Ẩn thông báo loading đơn giản
+          $('#loading-status').fadeOut(300);
+      }
+
+      // Xử lý form tìm theo tên món
+      $('#search-similar-btn').on('click', function(e) {
+          e.preventDefault();
+          var recipeName = $('#recipe-select').val();
+          if (!recipeName || recipeName === 'Chọn một món...') {
+              alert('Vui lòng chọn một món ăn!');
+              return;
+          }
+
+          // Hiển thị loading animation
+          showLoadingSpinner();
+
+          // Ẩn kết quả cũ nếu có
+          if ($('#recommendations').length > 0) {
+              $('#recommendations').hide();
+          }
+
+          // Vô hiệu hóa nút tìm kiếm
+          $(this).prop('disabled', true);
+
+          $.ajax({
+              url: '/recommend',
+              method: 'POST',
+              data: { recipe_name: recipeName },
+              success: function(response) {
+                  // Ẩn loading spinner
+                  hideLoadingSpinner();
+
+                  // Kích hoạt lại nút tìm kiếm
+                  $('#search-similar-btn').prop('disabled', false);
+
+                  if (response.length === 0) {
+                      // Hiển thị thông báo không tìm thấy kết quả
+                      if ($('#recommendations').length === 0) {
+                          $('.card.mb-4 .card-body').append(`
+                              <div id="recommendations" class="mt-4">
+                                  <h5 class="card-title">Công thức được gợi ý</h5>
+                                  <div id="recommendationsList" class="list-group">
+                                  </div>
+                              </div>
+                          `);
+                      }
+                      $('#recommendationsList').html('<div class="alert alert-info">Không tìm thấy công thức tương tự.</div>');
+                      $('#recommendations').show();
+                  } else {
+                      displayRecommendations(response);
+                  }
+              },
+              error: function(xhr, status, error) {
+                  // Ẩn loading spinner
+                  hideLoadingSpinner();
+
+                  // Kích hoạt lại nút tìm kiếm
+                  $('#search-similar-btn').prop('disabled', false);
+
+                  console.error('Error:', error);
+                  alert('Có lỗi xảy ra khi tìm kiếm công thức.');
+              }
+          });
+      });
+
+      // Xử lý form tìm theo nguyên liệu
+      $('#search-by-ingredients-btn').on('click', function(e) {
+          e.preventDefault();
+          var ingredients = $('#ingredients-input').val();
+          if (!ingredients) {
+              alert('Vui lòng nhập ít nhất một nguyên liệu!');
+              return;
+          }
+
+          // Hiển thị loading animation
+          showLoadingSpinner();
+
+          // Ẩn kết quả cũ nếu có
+          if ($('#recommendations').length > 0) {
+              $('#recommendations').hide();
+          }
+
+          // Vô hiệu hóa nút tìm kiếm
+          $(this).prop('disabled', true);
+
+          $.ajax({
+              url: '/recommend_by_ingredients',
+              method: 'POST',
+              data: { ingredients: ingredients },
+              success: function(response) {
+                  // Ẩn loading spinner
+                  hideLoadingSpinner();
+
+                  // Kích hoạt lại nút tìm kiếm
+                  $('#search-by-ingredients-btn').prop('disabled', false);
+
+                  if (response.error) {
+                      alert(response.error);
+                      return;
+                  }
+
+                  if (response.length === 0) {
+                      // Hiển thị thông báo không tìm thấy kết quả
+                      if ($('#recommendations').length === 0) {
+                          $('.card.mb-4 .card-body').append(`
+                              <div id="recommendations" class="mt-4">
+                                  <h5 class="card-title">Công thức được gợi ý</h5>
+                                  <div id="recommendationsList" class="list-group">
+                                  </div>
+                              </div>
+                          `);
+                      }
+                      $('#recommendationsList').html('<div class="alert alert-info">Không tìm thấy công thức phù hợp với nguyên liệu của bạn.</div>');
+                      $('#recommendations').show();
+                  } else {
+                      displayRecommendations(response);
+                  }
+              },
+              error: function(xhr, status, error) {
+                  // Ẩn loading spinner
+                  hideLoadingSpinner();
+
+                  // Kích hoạt lại nút tìm kiếm
+                  $('#search-by-ingredients-btn').prop('disabled', false);
+
+                  console.error('Error:', error);
+                  alert('Có lỗi xảy ra khi tìm kiếm công thức.');
+              }
+          });
+      });
+
+      // Hàm hiển thị kết quả gợi ý
+      function displayRecommendations(recipes) {
+          console.log("Nhận kết quả từ server:", recipes.length, "công thức");
+
+          // Loại bỏ các công thức trùng lặp dựa trên tên
+          var uniqueRecipes = [];
+          var recipeNames = new Set();
+          var duplicates = [];
+
+          recipes.forEach(function(recipe) {
+              if (!recipeNames.has(recipe.recipe_name)) {
+                  recipeNames.add(recipe.recipe_name);
+                  uniqueRecipes.push(recipe);
+              } else {
+                  duplicates.push(recipe.recipe_name);
+              }
+          });
+
+          // Log thông tin về việc loại bỏ trùng lặp
+          if (duplicates.length > 0) {
+              console.log("Đã loại bỏ", duplicates.length, "công thức trùng lặp ở phía client:");
+              console.log("Các công thức trùng lặp:", duplicates);
+          } else {
+              console.log("Không có công thức trùng lặp ở phía client");
+          }
+
+          // Sử dụng danh sách công thức không trùng lặp
+          recipes = uniqueRecipes;
+          console.log("Số công thức sau khi loại bỏ trùng lặp:", recipes.length);
+
+          // Tạo phần tử div cho recommendations nếu chưa tồn tại
+          if ($('#recommendations').length === 0) {
+              $('.card.mb-4 .card-body').append(`
+                  <div id="recommendations" class="mt-4">
+                      <h5 class="card-title">Công thức được gợi ý</h5>
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                          <span class="text-muted small">Tìm thấy ${recipes.length} công thức phù hợp</span>
+                          <span class="badge bg-success">${new Date().toLocaleTimeString()}</span>
+                      </div>
+                      <div id="recommendationsList" class="list-group">
+                      </div>
+                  </div>
+              `);
+          } else {
+              // Cập nhật thông tin số lượng kết quả và thời gian
+              $('#recommendations').find('.d-flex.justify-content-between').html(`
+                  <span class="text-muted small">Tìm thấy ${recipes.length} công thức phù hợp</span>
+                  <span class="badge bg-success">${new Date().toLocaleTimeString()}</span>
+              `);
+          }
+
+          var html = '';
+          recipes.forEach(function(recipe) {
+              html += `
+                  <a href="/recipe/${encodeURIComponent(recipe.recipe_name)}" class="list-group-item list-group-item-action">
+                      <div class="d-flex w-100 justify-content-between">
+                          <div class="d-flex align-items-center">
+                              ${recipe.img_src ?
+                                  `<img src="${recipe.img_src}" class="me-3" alt="${recipe.recipe_name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">` :
+                                  `<div class="me-3 bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 4px;">
+                                      <i class="fas fa-utensils text-muted"></i>
+                                  </div>`
+                              }
+                              <div>
+                                  <h6 class="mb-1">${recipe.recipe_name}</h6>
+                                  ${recipe.matching_count ?
+                                      `<small class="text-success">
+                                          <i class="fas fa-check-circle"></i>
+                                          Khớp ${recipe.matching_count} nguyên liệu (${Math.round(recipe.match_score * 100)}%)
+                                      </small>` : ''
+                                  }
+                              </div>
+                          </div>
+                          <small class="text-muted">${recipe.total_time}</small>
+                      </div>
+                      <small class="text-warning">
+                          <i class="fas fa-star"></i> ${recipe.rating}
+                      </small>
+                  </a>
+              `;
+          });
+          $('#recommendationsList').html(html);
+          $('#recommendations').show();
+
+          // Scroll đến kết quả
+          $('html, body').animate({
+              scrollTop: $('#recommendations').offset().top - 100
+          }, 500);
+      }
+  });
+</script>
+{% endblock %}

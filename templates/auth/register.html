@@ -1,0 +1,119 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header text-center">
+          <h4>Đăng ký tài khoản</h4>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="name" class="form-label">Họ tên</label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật khẩu</label>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                required
+              />
+              <div class="form-text">
+                Mật khẩu phải có:
+                <ul class="mb-0">
+                  <li>Ít nhất 5 ký tự</li>
+                  <li>Ít nhất 1 ký tự đặc biệt (!@#$%^&*(),.?":{}|<>)</li>
+                  <li>Ít nhất 1 chữ số</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="confirm_password" class="form-label">Xác nhận mật khẩu</label>
+              <input
+                type="password"
+                class="form-control"
+                id="confirm_password"
+                name="confirm_password"
+                required
+              />
+            </div>
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Đăng ký</button>
+            </div>
+          </form>
+          <hr />
+          <div class="text-center">
+            <p>
+              Đã có tài khoản?
+              <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    // Kiểm tra độ dài mật khẩu
+    if (password.length < 5) {
+        e.preventDefault();
+        alert('Mật khẩu phải có ít nhất 5 ký tự');
+        return;
+    }
+    
+    // Kiểm tra ký tự đặc biệt
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        e.preventDefault();
+        alert('Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt');
+        return;
+    }
+    
+    // Kiểm tra chữ số
+    if (!/\d/.test(password)) {
+        e.preventDefault();
+        alert('Mật khẩu phải chứa ít nhất 1 chữ số');
+        return;
+    }
+    
+    // Kiểm tra xác nhận mật khẩu
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Mật khẩu xác nhận không khớp');
+        return;
+    }
+});
+
+// Hiển thị yêu cầu mật khẩu khi focus vào trường mật khẩu
+document.getElementById('password').addEventListener('focus', function() {
+    this.parentElement.querySelector('.form-text').style.display = 'block';
+});
+
+document.getElementById('password').addEventListener('blur', function() {
+    this.parentElement.querySelector('.form-text').style.display = 'none';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Sơ đồ mối quan hệ giữa các nguyên liệu</h5>
+                <div id="network-graph" style="height: 700px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Các tập nguyên liệu phổ biến</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nguyên liệu</th>
+                                <th>Tần suất xuất hiện</th>
+                                <th>Độ hỗ trợ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in frequent_itemsets %}
+                            <tr>
+                                <td>
+                                    {% for ingredient in item.itemsets %}
+                                        {{ ingredient }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ item.support }}</td>
+                                <td>{{ "%.2f"|format(item.support * 100) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// Dữ liệu cho sơ đồ mạng
+const data = {
+    nodes: [],
+    links: []
+};
+
+// Tạo nodes từ các tập nguyên liệu
+const ingredientSet = new Set();
+const frequentItemsets = {{ frequent_itemsets|tojson|safe }};
+
+// Thêm tất cả các nguyên liệu vào set
+frequentItemsets.forEach(item => {
+    item.itemsets.forEach(ingredient => {
+        ingredientSet.add(ingredient);
+    });
+});
+
+// Thêm nodes
+ingredientSet.forEach(ingredient => {
+    data.nodes.push({
+        id: ingredient,
+        group: 1,
+        size: 1
+    });
+});
+
+// Thêm links từ các tập phổ biến
+frequentItemsets.forEach(item => {
+    if (item.itemsets.length > 1) {
+        for (let i = 0; i < item.itemsets.length; i++) {
+            for (let j = i + 1; j < item.itemsets.length; j++) {
+                data.links.push({
+                    source: item.itemsets[i],
+                    target: item.itemsets[j],
+                    value: item.support,
+                    strength: item.support
+                });
+            }
+        }
+    }
+});
+
+// Tạo sơ đồ mạng
+const width = document.getElementById('network-graph').clientWidth;
+const height = document.getElementById('network-graph').clientHeight;
+
+const svg = d3.select("#network-graph")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// Tạo simulation với các tham số được điều chỉnh để biểu đồ mượt và giãn ra
+const simulation = d3.forceSimulation(data.nodes)
+    // Tăng khoảng cách giữa các node từ 100 lên 150
+    .force("link", d3.forceLink(data.links).id(d => d.id).distance(150).strength(d => d.strength * 0.7))
+    // Giảm lực đẩy từ -300 xuống -400 để các node đẩy nhau xa hơn
+    .force("charge", d3.forceManyBody().strength(-400))
+    // Giữ các node ở giữa màn hình
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    // Thêm lực va chạm để tránh các node chồng lên nhau
+    .force("collision", d3.forceCollide().radius(30));
+
+// Vẽ links với màu sắc đẹp hơn và độ trong suốt thích hợp
+const link = svg.append("g")
+    .selectAll("line")
+    .data(data.links)
+    .join("line")
+    .attr("stroke", "#aed581") // Màu xanh lá nhạt hơn
+    .attr("stroke-opacity", 0.4) // Giảm độ đậm để nhìn đỡ rối
+    .attr("stroke-width", d => Math.sqrt(d.value) * 1.5); // Giảm độ dày đường kẻ
+
+// Vẽ nodes với kích thước lớn hơn và màu sắc đẹp hơn
+const node = svg.append("g")
+    .selectAll("circle")
+    .data(data.nodes)
+    .join("circle")
+    .attr("r", 7) // Tăng kích thước node từ 5 lên 7
+    .attr("fill", "#4CAF50") // Màu xanh lá cây đẹp hơn
+    .attr("stroke", "#fff") // Thêm viền trắng
+    .attr("stroke-width", 1.5) // Độ dày viền
+    .call(drag(simulation));
+
+// Thêm labels với font đẹp hơn và dễ đọc hơn
+const labels = svg.append("g")
+    .selectAll("text")
+    .data(data.nodes)
+    .join("text")
+    .text(d => d.id)
+    .attr("font-size", "13px") // Tăng kích thước font
+    .attr("font-weight", "bold") // Làm đậm chữ
+    .attr("dx", 10) // Tăng khoảng cách từ node
+    .attr("dy", 4)
+    .attr("fill", "#333") // Màu chữ đậm hơn
+    .attr("text-shadow", "0 0 3px white, 0 0 3px white, 0 0 3px white, 0 0 3px white"); // Thêm bóng trắng để dễ đọc
+
+// Cập nhật vị trí với giới hạn để các node không ra khỏi màn hình
+simulation.on("tick", () => {
+    // Giới hạn vị trí của các node trong phạm vi màn hình
+    node.each(d => {
+        d.x = Math.max(20, Math.min(width - 20, d.x));
+        d.y = Math.max(20, Math.min(height - 20, d.y));
+    });
+
+    // Cập nhật vị trí của các đường nối
+    link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+    // Cập nhật vị trí của các node
+    node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+    // Cập nhật vị trí của các nhãn
+    labels
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+});
+
+// Thêm tính năng kéo thả
+function drag(simulation) {
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+
+    return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+}
+
+// Thêm tính năng zoom với mức độ zoom tốt hơn
+const zoom = d3.zoom()
+    .scaleExtent([0.2, 5]) // Tăng phạm vi zoom
+    .on("zoom", (event) => {
+        svg.selectAll("g")
+            .attr("transform", event.transform);
+    });
+
+// Thêm hướng dẫn sử dụng
+svg.append("text")
+    .attr("x", 10)
+    .attr("y", 20)
+    .attr("font-size", "12px")
+    .attr("fill", "#666")
+    .text("Kéo thả các node để di chuyển, cuộn chuột để phóng to/thu nhỏ");
+
+// Áp dụng zoom và thiết lập mức zoom ban đầu
+svg.call(zoom)
+   .call(zoom.transform, d3.zoomIdentity.scale(0.8)); // Bắt đầu với mức zoom 0.8 để nhìn thấy toàn bộ biểu đồ
+</script>
+{% endblock %}

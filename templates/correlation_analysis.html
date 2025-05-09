@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Phân tích tương quan nguyên liệu{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-success mb-4">
+        <i class="fas fa-chart-bar"></i> Phân tích tương quan nguyên liệu
+    </h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Tổng quan</h2>
+                    <p>Phân tích này cho thấy mối tương quan giữa các nguyên liệu và đánh giá của công thức. Đánh giá trung bình tổng thể của tất cả công thức là <strong>{{ overall_avg_rating|round(2) }}</strong>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Top 10 nguyên liệu có ảnh hưởng tích cực nhất</h2>
+                    <p>Những nguyên liệu này khi xuất hiện trong công thức thường làm tăng đánh giá trung bình.</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nguyên liệu</th>
+                                    <th>Đánh giá trung bình khi có</th>
+                                    <th>Đánh giá trung bình khi không có</th>
+                                    <th>Chênh lệch</th>
+                                    <th>Số công thức có nguyên liệu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for _, row in top_positive.iterrows() %}
+                                <tr>
+                                    <td>{{ row.ingredient }}</td>
+                                    <td>{{ row.avg_rating_with|round(2) }}</td>
+                                    <td>{{ row.avg_rating_without|round(2) }}</td>
+                                    <td class="text-success">+{{ row.diff_with_without|round(2) }}</td>
+                                    <td>{{ row.count_with }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <img src="data:image/png;base64,{{ positive_chart }}" class="img-fluid" alt="Biểu đồ nguyên liệu tích cực">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Top 10 nguyên liệu có ảnh hưởng tiêu cực nhất</h2>
+                    <p>Những nguyên liệu này khi xuất hiện trong công thức thường làm giảm đánh giá trung bình.</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nguyên liệu</th>
+                                    <th>Đánh giá trung bình khi có</th>
+                                    <th>Đánh giá trung bình khi không có</th>
+                                    <th>Chênh lệch</th>
+                                    <th>Số công thức có nguyên liệu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for _, row in top_negative.iterrows() %}
+                                <tr>
+                                    <td>{{ row.ingredient }}</td>
+                                    <td>{{ row.avg_rating_with|round(2) }}</td>
+                                    <td>{{ row.avg_rating_without|round(2) }}</td>
+                                    <td class="text-danger">{{ row.diff_with_without|round(2) }}</td>
+                                    <td>{{ row.count_with }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <img src="data:image/png;base64,{{ negative_chart }}" class="img-fluid" alt="Biểu đồ nguyên liệu tiêu cực">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Tương quan giữa các nguyên liệu phổ biến</h2>
+                    <p>Biểu đồ nhiệt này cho thấy mức độ xuất hiện cùng nhau của các nguyên liệu phổ biến nhất.</p>
+                    
+                    <div class="mt-4">
+                        <img src="data:image/png;base64,{{ correlation_chart }}" class="img-fluid" alt="Biểu đồ tương quan nguyên liệu">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Kết luận</h2>
+                    <p>Từ phân tích trên, chúng ta có thể rút ra một số kết luận:</p>
+                    <ul>
+                        <li>Các nguyên liệu như {{ top_positive.iloc[0].ingredient }}, {{ top_positive.iloc[1].ingredient }}, và {{ top_positive.iloc[2].ingredient }} có ảnh hưởng tích cực nhất đến đánh giá công thức.</li>
+                        <li>Các nguyên liệu như {{ top_negative.iloc[0].ingredient }}, {{ top_negative.iloc[1].ingredient }}, và {{ top_negative.iloc[2].ingredient }} có ảnh hưởng tiêu cực nhất đến đánh giá công thức.</li>
+                        <li>Biểu đồ tương quan cho thấy một số cặp nguyên liệu thường xuất hiện cùng nhau, như {{ top_positive.iloc[0].ingredient }} và {{ top_positive.iloc[1].ingredient }}.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

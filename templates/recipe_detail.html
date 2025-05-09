@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-lg">
+                {% if recipe.img_src %}
+                <div class="position-relative overflow-hidden" style="max-height: 400px;">
+                    <img src="{{ recipe.img_src }}" 
+                         class="card-img-top w-100" 
+                         alt="{{ recipe.recipe_name }}"
+                         style="object-fit: cover; height: 400px; transition: transform 0.3s ease;">
+                    <div class="position-absolute bottom-0 start-0 w-100 p-3"
+                         style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
+                        <h2 class="text-white mb-0">{{ recipe.recipe_name }}</h2>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="card-title mb-0">{{ recipe.recipe_name }}</h3>
+                        {% if current_user.is_authenticated %}
+                            {% if not current_user.is_admin %}
+                            <div>
+                                <button class="btn {% if recipe.recipe_name in current_user.favorites|map(attribute='name') %}btn-danger{% else %}btn-outline-danger{% endif %} favorite-btn"
+                                        data-recipe="{{ recipe.recipe_name }}"
+                                        onclick="toggleFavorite(this)">
+                                    <i class="fas fa-heart"></i>
+                                    <span class="ms-1">{% if recipe.recipe_name in current_user.favorites|map(attribute='name') %}Đã yêu thích{% else %}Yêu thích{% endif %}</span>
+                                </button>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div>
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-danger">
+                                    <i class="fas fa-heart"></i>
+                                    <span class="ms-1">Đăng nhập để yêu thích</span>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="text-warning">
+                            <div class="rating">
+                                <span class="h5 me-2">{{ "%.1f"|format(recipe.rating|float) }}</span>
+                                <div class="stars d-inline-block">
+                                    {% for i in range(1, 6) %}
+                                    <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-muted">
+                            {% if recipe.prep_time %}
+                            <span class="me-3">
+                                <i class="fas fa-clock me-1"></i>Chuẩn bị: {{ recipe.prep_time }}
+                            </span>
+                            {% endif %}
+                            {% if recipe.cook_time %}
+                            <span class="me-3">
+                                <i class="fas fa-fire me-1"></i>Nấu: {{ recipe.cook_time }}
+                            </span>
+                            {% endif %}
+                            {% if recipe.total_time %}
+                            <span>
+                                <i class="fas fa-hourglass-half me-1"></i>Tổng thời gian: {{ recipe.total_time }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5><i class="fas fa-list me-2"></i>Nguyên liệu</h5>
+                        <ul class="list-group">
+                            {% for ingredient in recipe.ingredients.split(',') %}
+                            <li class="list-group-item">{{ ingredient.strip() }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5><i class="fas fa-tasks me-2"></i>Hướng dẫn nấu</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                {% if recipe.directions %}
+                                    {% for step in recipe.directions.split('\n') %}
+                                        {% if step.strip() %}
+                                        <p class="mb-3">{{ step.strip() }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted">Chưa có hướng dẫn chi tiết cho món này.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if recipe.nutrition %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-heartbeat me-2"></i>Thông tin dinh dưỡng</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled mb-0">
+                                            {% for info in recipe.nutrition.split(',') %}
+                                                <li class="mb-2">
+                                                    <span class="fw-bold">{{ info.split()[0] }} {{ info.split()[1] if info.split()|length > 1 else '' }}</span>
+                                                    <span class="float-end">{{ ' '.join(info.split()[2:]) if info.split()|length > 2 else '' }}</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm" style="position: sticky; top: 2rem;">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>Công thức tương tự
+                    </h5>
+                    <div class="list-group">
+                        {% for recipe in recommendations %}
+                        <a href="{{ url_for('recipe_detail', recipe_name=recipe.recipe_name) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    {% if recipe.img_src %}
+                                    <img src="{{ recipe.img_src }}" 
+                                         class="me-3"
+                                         alt="{{ recipe.recipe_name }}"
+                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                    {% else %}
+                                    <div class="me-3 bg-light d-flex align-items-center justify-content-center"
+                                         style="width: 60px; height: 60px; border-radius: 4px;">
+                                        <i class="fas fa-utensils text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <h6 class="mb-1">{{ recipe.recipe_name }}</h6>
+                                </div>
+                                <small class="text-muted">{{ recipe.total_time }}</small>
+                            </div>
+                            <small class="text-warning">
+                                <i class="fas fa-star"></i> {{ recipe.rating }}
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleFavorite(button) {
+    const recipeName = button.dataset.recipe;
+    
+    // Disable button while processing
+    button.disabled = true;
+    
+    fetch(`/toggle_favorite/${encodeURIComponent(recipeName)}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Update button appearance
+        if (data.status === 'added') {
+            button.classList.remove('btn-outline-danger');
+            button.classList.add('btn-danger');
+            button.innerHTML = '<i class="fas fa-heart"></i> <span class="ms-1">Đã yêu thích</span>';
+        } else {
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-outline-danger');
+            button.innerHTML = '<i class="fas fa-heart"></i> <span class="ms-1">Yêu thích</span>';
+        }
+        // Show success message
+        toastr.success(data.message);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        toastr.error(error.error || 'Không thể cập nhật trạng thái yêu thích');
+    })
+    .finally(() => {
+        // Re-enable button
+        button.disabled = false;
+    });
+}
+
+// Xử lý đánh giá
+$('.star-rating').hover(
+    function() {
+        var rating = $(this).data('rating');
+        $(this).parent().find('.star-rating').each(function(index) {
+            if (index < rating) {
+                $(this).addClass('text-warning');
+            } else {
+                $(this).removeClass('text-warning');
+            }
+        });
+    },
+    function() {
+        $(this).parent().find('.star-rating').removeClass('text-warning');
+    }
+);
+
+$('.star-rating').click(function() {
+    var rating = $(this).data('rating');
+    var recipeName = $(this).data('recipe');
+    $.ajax({
+        url: '/rate/' + recipeName,
+        type: 'POST',
+        data: { rating: rating },
+        success: function(response) {
+            toastr.success('Cảm ơn bạn đã đánh giá!');
+            // Cập nhật hiển thị rating
+            $('.rating .h5').text(response.new_rating.toFixed(1));
+        },
+        error: function() {
+            toastr.error('Có lỗi xảy ra. Vui lòng thử lại.');
+        }
+    });
+});
+</script>
+{% endblock %}
+

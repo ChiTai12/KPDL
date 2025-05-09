@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h1 class="text-center mb-4">Danh Mục Món Ăn Tự Động</h1>
+  <p class="text-center text-muted mb-5">
+    Được tạo dựa trên công nghệ phân tích và phân cụm thông minh
+  </p>
+
+  {% if current_user.is_authenticated and current_user.is_admin %}
+  <!-- Chỉ admin mới thấy biểu đồ phân cụm -->
+  <div class="card mb-4 shadow-lg">
+    <div class="card-body">
+      <h5 class="card-title">Phân cụm công thức nấu ăn</h5>
+      <div class="text-center">
+        <img
+          src="data:image/png;base64,{{ cluster_image }}"
+          class="img-fluid"
+          alt="Biểu đồ phân cụm"
+        />
+        <button class="btn btn-secondary mt-3" onclick="toggleFullscreen(this)">
+          <i class="fas fa-expand"></i> Biểu đồ phân cụm công thức nấu ăn
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Phần hiển thị các nhóm món ăn -->
+  <div class="row">
+    {% for category in menu_categories %}
+    <div class="col-md-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ category.name }}</h5>
+            <span class="badge bg-light text-primary rounded-pill"
+              >{{ category.count }} món</span
+            >
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            {% for recipe in category.recipes %}
+            <a
+              href="{{ url_for('recipe_detail', recipe_name=recipe.recipe_name) }}"
+              class="list-group-item list-group-item-action"
+            >
+              <div
+                class="d-flex w-100 justify-content-between align-items-center"
+              >
+                <div class="d-flex align-items-center">
+                  {% if recipe.img_src %}
+                  <img
+                    src="{{ recipe.img_src }}"
+                    alt="{{ recipe.recipe_name }}"
+                    class="me-3"
+                    style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"
+                  />
+                  {% else %}
+                  <div
+                    class="me-3 bg-light d-flex align-items-center justify-content-center"
+                    style="width: 50px; height: 50px; border-radius: 4px;"
+                  >
+                    <i class="fas fa-utensils text-muted"></i>
+                  </div>
+                  {% endif %}
+                  <div>
+                    <h6 class="mb-1">{{ recipe.recipe_name }}</h6>
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>{{ recipe.total_time }}
+                    </small>
+                  </div>
+                </div>
+                <div class="text-warning">
+                  <i class="fas fa-star"></i>
+                  <small>{{ "%.1f"|format(recipe.rating) }}</small>
+                </div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+
+          <div class="text-center mt-3">
+            <a
+              href="{{ url_for('build_menu') }}"
+              class="btn btn-outline-primary btn-sm"
+            >
+              <i class="fas fa-edit me-1"></i>Tạo thực đơn từ danh mục này
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleFullscreen(button) {
+      const img = button.previousElementSibling;
+      if (!document.fullscreenElement) {
+          if (img.requestFullscreen) {
+              img.requestFullscreen();
+          } else if (img.webkitRequestFullscreen) { /* Safari */
+              img.webkitRequestFullscreen();
+          } else if (img.msRequestFullscreen) { /* IE11 */
+              img.msRequestFullscreen();
+          }
+          button.innerHTML = '<i class="fas fa-compress"></i> Thu nhỏ';
+      } else {
+          if (document.exitFullscreen) {
+              document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) { /* Safari */
+              document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) { /* IE11 */
+              document.msExitFullscreen();
+          }
+          button.innerHTML = '<i class="fas fa-expand"></i> Phóng to';
+      }
+  }
+
+  document.addEventListener('fullscreenchange', function() {
+      const button = document.querySelector('.btn-secondary');
+      if (!document.fullscreenElement) {
+          button.innerHTML = '<i class="fas fa-expand"></i> Biểu đồ phân cụm công thức nấu ăn';
+      }
+  });
+</script>
+
+<style>
+  @media print {
+      .card-header {
+          background-color: #0d6efd !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+      }
+
+      .btn {
+          display: none !important;
+      }
+
+      a {
+          text-decoration: none !important;
+          color: black !important;
+      }
+
+      .list-group-item:hover {
+          background-color: white !important;
+      }
+  }
+</style>
+{% endblock %}
